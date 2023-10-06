@@ -26,18 +26,18 @@ jobs:
         run: echo "::set-output name=sha::$(echo ${GITHUB_SHA::7})"
 
       - name: Build React App
-        run: REACT_APP_VERSION=${{ steps.short-sha.outputs.sha }} PUBLIC_URL="/${{ steps.short-sha.outputs.sha }}" npm run build
+        run: |
+          version=${{ steps.short-sha.outputs.sha }}
+          path="${{ secrets.BUCKET_URL }}$version"
+          REACT_APP_VERSION=$version PUBLIC_URL=$path npm run build
 
-      # Install Wrangler
       - name: Install Wrangler
         run: npm install -g wrangler@latest
 
-      # Install rclone
       - name: Install rclone
         run: |
           curl https://rclone.org/install.sh | sudo bash
 
-      # Upload assets to Cloudflare R2
       - name: Upload to Cloudflare R2
         env:
           R2_BUCKET: ${{ secrets.R2_BUCKET }}
@@ -56,17 +56,16 @@ jobs:
           echo "endpoint = $R2_ENDPOINT" >> ~/.config/rclone/rclone.conf
           ./scripts/upload-to-cloudflare-r2.sh ${{ steps.short-sha.outputs.sha }} $R2_BUCKET
 
-      # Capture the hash of main.js file with hash in build/static/js only get the one ending in .js
       - name: Capture main js file
         id: capture-hash
         run: |
-          echo "::set-output name=index_hash::$(ls -1 build/static/js/main.*.js | sed 's/build\/static\/js\///g')"
+          echo "::set-output name=index_hash::$(ls -1 build/static/js/main.*.js | sed 's/build\///g')"
 
-      # Set frontend_version and backend_version in Cloudflare KV
       - name: Update Cloudflare KV
         run: |
+          path="${{ secrets.BUCKET_URL }}${{ steps.short-sha.outputs.sha }}/${{ steps.capture-hash.outputs.index_hash }}"
           wrangler kv:key put --namespace-id=${{ secrets.BE_FE_NAMESPACE }} "90000" "${{ steps.short-sha.outputs.sha }}"
-          wrangler kv:key put --namespace-id=${{ secrets.FE_JS_NAMESPACE }} "${{ steps.short-sha.outputs.sha }}" "${{ steps.short-sha.outputs.sha }}/static/js/${{ steps.capture-hash.outputs.index_hash }}"
-          wrangler kv:key put --namespace-id=${{ secrets.FE_JS_NAMESPACE }} "latest" "${{ steps.short-sha.outputs.sha }}/static/js/${{ steps.capture-hash.outputs.index_hash }}"
+          wrangler kv:key put --namespace-id=${{ secrets.FE_JS_NAMESPACE }} "${{ steps.short-sha.outputs.sha }}" $path
+          wrangler kv:key put --namespace-id=${{ secrets.FE_JS_NAMESPACE }} "latest" $path
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_KEY }}
