@@ -1,4 +1,4 @@
-import { useState, Suspense } from "react";
+import { useState, Suspense, useEffect } from "react";
 import "./App.css";
 
 function App() {
@@ -9,6 +9,16 @@ function App() {
     const module = await import("./DynamicComponent"); // Adjust the path to your component
     setDynamicComponent(() => module.default);
   };
+
+  const [versions, setVersions] = useState([]);
+  useEffect(() => {
+    fetch("https://worker-noisy-butterfly-35a2.nicolas-espinoza.workers.dev/")
+      .then((response) => response.json())
+      .then((data) => {
+        console.log(data);
+        setVersions(data.versions);
+      });
+  }, []);
 
   return (
     <div className="App">
@@ -32,8 +42,12 @@ function App() {
         )}
       </div>
       <div className="VersionList">
-        <div>Click on a version to see it loaded by Django:</div>
-        {["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"].map((version) => (
+        <div>
+          The below list of versions is being fetched from the Cloudflare
+          database.
+        </div>
+        <div>Click on one to see it loaded by Django:</div>
+        {versions.map((version) => (
           <a key={version} href={`/ink/test-poc?fe_version=${version}`}>
             {version}
           </a>
