@@ -54,7 +54,7 @@ jobs:
           echo "access_key_id = $R2_ACCESS_KEY_ID" >> ~/.config/rclone/rclone.conf
           echo "secret_access_key = $R2_SECRET_ACCESS_KEY" >> ~/.config/rclone/rclone.conf
           echo "endpoint = $R2_ENDPOINT" >> ~/.config/rclone/rclone.conf
-          ./scripts/upload-to-cloudflare-r2.sh $SHORT_SHA $R2_BUCKET
+          ./upload-to-cloudflare-r2.sh $SHORT_SHA $R2_BUCKET
 
       - name: Capture main js file
         run: |
