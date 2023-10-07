@@ -22,12 +22,12 @@ jobs:
         run: npm install
 
       - name: Get short SHA
-        id: short-sha
-        run: echo "::set-output name=sha::$(echo ${GITHUB_SHA::7})"
+        run: |
+          echo "SHORT_SHA=${GITHUB_SHA::7}" >> $GITHUB_ENV
 
       - name: Build React App
         run: |
-          version=${{ steps.short-sha.outputs.sha }}
+          version=$SHORT_SHA
           path="${{ secrets.BUCKET_URL }}$version"
           REACT_APP_VERSION=$version PUBLIC_URL=$path npm run build
 
@@ -54,16 +54,15 @@ jobs:
           echo "access_key_id = $R2_ACCESS_KEY_ID" >> ~/.config/rclone/rclone.conf
           echo "secret_access_key = $R2_SECRET_ACCESS_KEY" >> ~/.config/rclone/rclone.conf
           echo "endpoint = $R2_ENDPOINT" >> ~/.config/rclone/rclone.conf
-          ./scripts/upload-to-cloudflare-r2.sh ${{ steps.short-sha.outputs.sha }} $R2_BUCKET
+          ./scripts/upload-to-cloudflare-r2.sh $SHORT_SHA $R2_BUCKET
 
       - name: Capture main js file
-        id: capture-hash
         run: |
-          echo "::set-output name=index_hash::$(ls -1 build/static/js/main.*.js | sed 's/build\///g')"
+          echo "MAIN_JS_PATH=$(ls -1 build/static/js/main.*.js | sed 's/build\///g')" >> $GITHUB_ENV
 
       - name: Update Cloudflare KV
         run: |
-          path="${{ secrets.BUCKET_URL }}${{ steps.short-sha.outputs.sha }}/${{ steps.capture-hash.outputs.index_hash }}"
+          path="${{ secrets.BUCKET_URL }}${{ steps.short-sha.outputs.sha }}/$MAIN_JS_PATH"
           wrangler kv:key put --namespace-id=${{ secrets.BE_FE_NAMESPACE }} "90000" "${{ steps.short-sha.outputs.sha }}"
           wrangler kv:key put --namespace-id=${{ secrets.FE_JS_NAMESPACE }} "${{ steps.short-sha.outputs.sha }}" $path
           wrangler kv:key put --namespace-id=${{ secrets.FE_JS_NAMESPACE }} "latest" $path
