@@ -12,17 +12,33 @@ function App() {
 
   return (
     <div className="App">
-      <header className="App-header">
-        The version is: {process.env.REACT_APP_VERSION}
-      </header>
-      <div>counter: {counter}</div>
-      <button onClick={() => setCounter(counter + 1)}>increment</button>
-      <button onClick={loadDynamicComponent}>Load Dynamic Component</button>
-      {DynamicComponent && (
-        <Suspense fallback={<div>Loading...</div>}>
-          <DynamicComponent />
-        </Suspense>
-      )}
+      <div>The version is: {process.env.REACT_APP_VERSION}</div>
+      <div>Deploy a new version and see it update automatically!</div>
+      <div className="Counter">
+        <div>React working flawlessly 👉</div>
+        <div>
+          <button onClick={() => setCounter(counter + 1)}>+</button>
+          Counter: {counter}{" "}
+        </div>
+      </div>
+      <div className="LoadDynamicComponent">
+        Open the Network tab and click the button below to see the dynamic
+        component being loaded:
+        <button onClick={loadDynamicComponent}>Load Dynamic Component</button>
+        {DynamicComponent && (
+          <Suspense fallback={<div>Loading...</div>}>
+            <DynamicComponent />
+          </Suspense>
+        )}
+      </div>
+      <div className="VersionList">
+        <div>Click on a version to see it loaded by Django:</div>
+        {["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"].map((version) => (
+          <a key={version} href={`/ink/test-poc?fe_version=${version}`}>
+            {version}
+          </a>
+        ))}
+      </div>
     </div>
   );
 }
